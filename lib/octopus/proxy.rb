@@ -129,6 +129,14 @@ class Octopus::Proxy
     end
   end
 
+  def respond_to?(method)
+    if [:pk_and_sequence_for, :primary_key].include? method
+      select_connection().respond_to? method
+    else
+      super
+    end
+  end
+
   def method_missing(method, *args, &block)
     if should_clean_connection?(method)
       conn = select_connection()
