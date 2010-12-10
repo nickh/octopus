@@ -11,7 +11,14 @@ module Octopus
   end
 
   def self.config()
-    @config ||= HashWithIndifferentAccess.new(YAML.load(ERB.new(File.open(Octopus.directory() + "/config/shards.yml").read()).result))[Octopus.env()]
+    @config ||= begin
+      shard_config = Octopus.directory() + "/config/shards.yml"
+      if File.exists? shard_config
+        HashWithIndifferentAccess.new(YAML.load(ERB.new(File.open(shard_config).read()).result))[Octopus.env()]
+      else
+        HashWithIndifferentAccess.new
+      end
+    end
 
     if @config && @config['environments']
       self.environments = @config['environments']
@@ -39,6 +46,12 @@ module Octopus
 
   def self.environments
     @environments || ['production']
+  end
+
+  def self.shards=(shards)
+    @config ||= {}
+    @config[rails_env()] = shards
+    ActiveRecord::Base.connection.initialize_shards(@config)
   end
 
   def self.rails3?
